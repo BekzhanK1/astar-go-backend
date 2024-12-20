@@ -3,8 +3,7 @@ package user
 import (
 	"context"
 	"errors"
-
-	"golang.org/x/crypto/bcrypt"
+	"user-service/internal/utils"
 )
 
 type Service interface {
@@ -12,6 +11,7 @@ type Service interface {
 	GetProfile(ctx context.Context, id uint) (*User, error)
 	UpdateProfile(ctx context.Context, user *User) error
 	DeleteUser(ctx context.Context, id uint) error
+	ValidateUser(ctx context.Context, email, password string) (bool, error)
 }
 
 type service struct {
@@ -23,7 +23,7 @@ func NewService(repo Repository) Service {
 }
 
 func (s *service) Register(ctx context.Context, user *User) (*User, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +43,13 @@ func (s *service) GetProfile(ctx context.Context, id uint) (*User, error) {
 	return user, nil
 }
 
+// TODO: Implement the UpdateProfile method (Remove password field from the user struct)
 func (s *service) UpdateProfile(ctx context.Context, user *User) error {
 	if user.ID == 0 {
 		return errors.New("user ID is required")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return err
 	}
@@ -69,4 +70,19 @@ func (s *service) DeleteUser(ctx context.Context, id uint) error {
 		return err
 	}
 	return nil
+}
+
+func (s *service) ValidateUser(ctx context.Context, email, password string) (bool, error) {
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return false, err
+	}
+
+	valid, err := user.ComparePassword(password)
+
+	if err != nil {
+		return false, err
+	}
+
+	return valid, nil
 }

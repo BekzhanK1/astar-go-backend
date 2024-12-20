@@ -1,8 +1,11 @@
 package user
 
-import "gorm.io/gorm"
+import (
+	"user-service/internal/utils"
 
-// User model represents a user in the system.
+	"gorm.io/gorm"
+)
+
 type User struct {
 	ID        uint           `gorm:"primaryKey"`
 	Email     string         `gorm:"unique;not null"`
@@ -21,3 +24,7 @@ const (
 	RoleAdvisor     = "advisor"
 	RoleTeacher     = "teacher"
 )
+
+func (u *User) ComparePassword(password string) (bool, error) {
+	return utils.ComparePassword(u.Password, password)
+}

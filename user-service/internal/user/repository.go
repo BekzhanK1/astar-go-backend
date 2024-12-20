@@ -49,3 +49,18 @@ func (r *GormRepository) Update(ctx context.Context, user *User) error {
 func (r *GormRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.Delete(&User{}, id).Error
 }
+
+func (r *GormRepository) ValidateUser(ctx context.Context, email string, password string) (bool, error) {
+	var user User
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		return false, err
+	}
+
+	valid, err := user.ComparePassword(password)
+
+	if err != nil {
+		return false, err
+	}
+
+	return valid, nil
+}
