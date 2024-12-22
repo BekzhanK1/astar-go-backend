@@ -16,9 +16,7 @@ func NewAuthService(secret string) *TokenService {
 	}
 }
 
-// GenerateTokens generates an access token and a refresh token with user ID and role.
 func (ts *TokenService) GenerateTokens(userID uint, role string) (string, string, error) {
-	// Access Token
 	accessClaims := jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
@@ -29,7 +27,6 @@ func (ts *TokenService) GenerateTokens(userID uint, role string) (string, string
 		return "", "", err
 	}
 
-	// Refresh Token
 	refreshClaims := jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
@@ -43,7 +40,6 @@ func (ts *TokenService) GenerateTokens(userID uint, role string) (string, string
 	return accessToken, refreshToken, nil
 }
 
-// ValidateToken validates a JWT token and returns the claims.
 func (ts *TokenService) ValidateToken(token string) (jwt.MapClaims, error) {
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return ts.JWTSecret, nil

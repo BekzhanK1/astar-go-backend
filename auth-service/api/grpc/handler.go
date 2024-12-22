@@ -1,24 +1,28 @@
-package handlers
+package grpc
 
 import (
 	"auth-service/internal/services"
 	pb "auth-service/proto"
 	"context"
+	"fmt"
 )
 
 type AuthHandler struct {
 	pb.UnimplementedAuthServiceServer
-	authService services.AuthService
+	authService *services.AuthService
 }
 
 func NewAuthHandler(authService *services.AuthService) *AuthHandler {
-	return AuthHandler{authService: authService}
+	return &AuthHandler{authService: authService}
 }
 
 func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	return h.authService.Login(req.Email, req.Password)
-}
-
-func (h *AuthHandler) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
-	return h.authService.RefreshToken(req.RefreshToken)
+	accessToken, refreshToken, err := h.authService.Login(req.Email, req.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to login: %w", err)
+	}
+	return &pb.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
