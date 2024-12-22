@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "./";
+
+service AuthService {
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+  rpc RevokeAllTokens (RevokeAllTokensRequest) returns (RevokeAllTokensResponse);
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message LogoutResponse {
+  string message = 1;
+}
+
+message RevokeAllTokensRequest {
+  uint32 user_id = 1;
+}
+
+message RevokeAllTokensResponse {
+  string message = 1;
+}

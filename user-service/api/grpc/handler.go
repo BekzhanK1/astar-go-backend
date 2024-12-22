@@ -93,13 +93,23 @@ func (s *UserServiceServer) DeleteUser(ctx context.Context, req *pb.DeleteUserRe
 }
 
 func (s *UserServiceServer) ValidateUser(ctx context.Context, req *pb.ValidateUserRequest) (*pb.ValidateUserResponse, error) {
-	valid, err := s.service.ValidateUser(ctx, req.Email, req.Password)
+	valid, user, err := s.service.ValidateUser(ctx, req.Email, req.Password)
 
 	if err != nil {
 		return nil, err
 	}
 
+	if !valid {
+		return &pb.ValidateUserResponse{
+			Id:    0,
+			Valid: false,
+			Role:  "",
+		}, nil
+	}
+
 	return &pb.ValidateUserResponse{
+		Id:    uint64(user.ID),
 		Valid: valid,
+		Role:  user.Role,
 	}, nil
 }

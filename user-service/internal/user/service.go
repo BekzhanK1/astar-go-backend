@@ -11,7 +11,7 @@ type Service interface {
 	GetProfile(ctx context.Context, id uint) (*User, error)
 	UpdateProfile(ctx context.Context, user *User) error
 	DeleteUser(ctx context.Context, id uint) error
-	ValidateUser(ctx context.Context, email, password string) (bool, error)
+	ValidateUser(ctx context.Context, email, password string) (bool, *User, error)
 }
 
 type service struct {
@@ -72,17 +72,21 @@ func (s *service) DeleteUser(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *service) ValidateUser(ctx context.Context, email, password string) (bool, error) {
+func (s *service) ValidateUser(ctx context.Context, email, password string) (bool, *User, error) {
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	valid, err := user.ComparePassword(password)
 
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
-	return valid, nil
+	if valid {
+		return true, user, nil
+	}
+
+	return false, nil, nil
 }

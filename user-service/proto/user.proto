@@ -65,5 +65,7 @@ message ValidateUserRequest {
 }
 
 message ValidateUserResponse {
-  bool valid = 1;
+  uint64 id = 1;
+  bool valid = 2;
+  string role = 3;
 }

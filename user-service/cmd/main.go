@@ -24,7 +24,7 @@ func main() {
 	}
 
 	// Auto-migrate User schema
-	if err := db.AutoMigrate(&user.User{}); err != nil {
+	if err = db.AutoMigrate(&user.User{}); err != nil {
 		log.Fatalf("failed to auto-migrate: %v", err)
 	}
 
