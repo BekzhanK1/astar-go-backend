@@ -7,7 +7,10 @@ import (
 	"google.golang.org/grpc"
 
 	userGrpc "user-service/api/grpc"
-	"user-service/internal/user"
+	admin "user-service/internal/admin"
+	userModel "user-service/internal/user/models"
+	userRepository "user-service/internal/user/repository"
+	userService "user-service/internal/user/service"
 	"user-service/pkg/config"
 	"user-service/pkg/database"
 	pb "user-service/proto"
@@ -24,13 +27,21 @@ func main() {
 	}
 
 	// Auto-migrate User schema
-	if err = db.AutoMigrate(&user.User{}); err != nil {
+	if err = db.AutoMigrate(&userModel.User{}); err != nil {
 		log.Fatalf("failed to auto-migrate: %v", err)
 	}
 
 	// Initialize repository and service
-	userRepo := user.NewGormRepository(db)
-	userService := user.NewService(userRepo)
+	userRepo := userRepository.NewGormRepository(db)
+	userService := userService.NewService(userRepo)
+
+	adminUser, err := admin.CreateAdmin(userRepo)
+
+	if err != nil {
+		log.Fatalf("failed to create admin user: %v", err)
+	}
+
+	log.Printf("Admin user created: %s", adminUser.Email)
 
 	// Set up gRPC server
 	grpcServer := grpc.NewServer()

@@ -3,26 +3,32 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
+	userModels "user-service/internal/user/models"
+	userRepo "user-service/internal/user/repository"
 	"user-service/internal/utils"
 )
 
 type Service interface {
-	Register(ctx context.Context, user *User) (*User, error)
-	GetProfile(ctx context.Context, id uint) (*User, error)
-	UpdateProfile(ctx context.Context, user *User) error
+	Register(ctx context.Context, user *userModels.User) (*userModels.User, error)
+	GetProfile(ctx context.Context, id uint) (*userModels.User, error)
+	UpdateProfile(ctx context.Context, user *userModels.User) error
 	DeleteUser(ctx context.Context, id uint) error
-	ValidateUser(ctx context.Context, email, password string) (bool, *User, error)
+	ValidateUser(ctx context.Context, email, password string) (bool, *userModels.User, error)
 }
 
 type service struct {
-	repo Repository
+	repo userRepo.Repository
 }
 
-func NewService(repo Repository) Service {
+func NewService(repo userRepo.Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) Register(ctx context.Context, user *User) (*User, error) {
+func (s *service) Register(ctx context.Context, user *userModels.User) (*userModels.User, error) {
+	if user.Role == "superadmin" {
+		return nil, fmt.Errorf("superadmin cannot be created")
+	}
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return nil, err
@@ -35,7 +41,7 @@ func (s *service) Register(ctx context.Context, user *User) (*User, error) {
 	return user, nil
 }
 
-func (s *service) GetProfile(ctx context.Context, id uint) (*User, error) {
+func (s *service) GetProfile(ctx context.Context, id uint) (*userModels.User, error) {
 	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -44,7 +50,7 @@ func (s *service) GetProfile(ctx context.Context, id uint) (*User, error) {
 }
 
 // TODO: Implement the UpdateProfile method (Remove password field from the user struct)
-func (s *service) UpdateProfile(ctx context.Context, user *User) error {
+func (s *service) UpdateProfile(ctx context.Context, user *userModels.User) error {
 	if user.ID == 0 {
 		return errors.New("user ID is required")
 	}
@@ -72,7 +78,7 @@ func (s *service) DeleteUser(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *service) ValidateUser(ctx context.Context, email, password string) (bool, *User, error) {
+func (s *service) ValidateUser(ctx context.Context, email, password string) (bool, *userModels.User, error) {
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return false, nil, err

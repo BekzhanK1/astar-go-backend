@@ -2,7 +2,7 @@ package config
 
 import (
 	"log"
-	"os"
+	"user-service/internal/utils"
 
 	"github.com/joho/godotenv"
 )
@@ -19,12 +19,12 @@ func LoadConfig() *Config {
 	}
 
 	dsn := buildDSN(
-		getEnv("DATABASE_HOST", "localhost"),
-		getEnv("DATABASE_PORT", "5432"),
-		getEnv("DATABASE_USER", "user"),
-		getEnv("DATABASE_PASSWORD", "password"),
-		getEnv("DATABASE_NAME", "dbname"),
-		getEnv("DATABASE_SSLMODE", "disable"),
+		utils.GetEnv("DATABASE_HOST", "localhost"),
+		utils.GetEnv("DATABASE_PORT", "5432"),
+		utils.GetEnv("DATABASE_USER", "user"),
+		utils.GetEnv("DATABASE_PASSWORD", "password"),
+		utils.GetEnv("DATABASE_NAME", "dbname"),
+		utils.GetEnv("DATABASE_SSLMODE", "disable"),
 	)
 
 	return &Config{DatabaseDSN: dsn}
@@ -37,12 +37,4 @@ func buildDSN(host, port, user, password, dbname, sslmode string) string {
 		" password=" + password +
 		" dbname=" + dbname +
 		" sslmode=" + sslmode
-}
-
-func getEnv(key, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
-	return value
 }

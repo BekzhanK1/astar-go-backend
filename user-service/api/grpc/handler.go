@@ -3,22 +3,23 @@ package grpc
 import (
 	"context"
 
-	"user-service/internal/user"
+	userModels "user-service/internal/user/models"
+	userService "user-service/internal/user/service"
 	pb "user-service/proto"
 )
 
 type UserServiceServer struct {
 	pb.UnimplementedUserServiceServer
-	service user.Service
+	service userService.Service
 }
 
 // NewUserServiceServer creates a new gRPC server for the UserService.
-func NewUserServiceServer(service user.Service) *UserServiceServer {
+func NewUserServiceServer(service userService.Service) *UserServiceServer {
 	return &UserServiceServer{service: service}
 }
 
 func (s *UserServiceServer) RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error) {
-	user := &user.User{
+	user := &userModels.User{
 		Email:     req.Email,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -64,7 +65,7 @@ func (s *UserServiceServer) GetProfile(ctx context.Context, req *pb.GetProfileRe
 }
 
 func (s *UserServiceServer) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRequest) (*pb.UpdateProfileResponse, error) {
-	user := &user.User{
+	user := &userModels.User{
 		ID:        uint(req.User.Id),
 		Email:     req.User.Email,
 		FirstName: req.User.FirstName,
