@@ -30,33 +30,34 @@ func NewAuthService(service *auth.TokenService, userClient *clients.UserServiceC
 	return &AuthService{service: service, userClient: userClient, repo: repo}
 }
 
-func (s *AuthService) Login(email, password string) (string, string, error) {
+func (s *AuthService) Login(email, password string) (string, string, string, error) {
 	fmt.Printf("Validating user %s\n", email)
 	fmt.Printf("Validating user %s\n", password)
 	userID, role, err := s.userClient.ValidateUser(email, password)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to validate user: %w", err)
+		return "", "", "", fmt.Errorf("failed to validate user: %w", err)
 	}
 
 	accessToken, refreshToken, err := s.service.GenerateTokens(uint(userID), role)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to generate tokens: %w", err)
+		return "", "", "", fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
 	hashToken, err := utils.HashToken(refreshToken)
 
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	if err := s.SaveRefreshToken(uint(userID), hashToken); err != nil {
-		return "", "", fmt.Errorf("failed to save refresh token: %w", err)
+	sessionID, err := s.SaveRefreshToken(uint(userID), hashToken)
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to save refresh token: %w", err)
 	}
 
-	return accessToken, refreshToken, nil
+	return accessToken, refreshToken, sessionID, nil
 }
 
-func (s *AuthService) SaveRefreshToken(userID uint, tokenHash string) error {
+func (s *AuthService) SaveRefreshToken(userID uint, tokenHash string) (string, error) {
 	token := models.RefreshToken{
 		UserID:    userID,
 		TokenHash: tokenHash,
@@ -68,14 +69,45 @@ func (s *AuthService) SaveRefreshToken(userID uint, tokenHash string) error {
 	return s.repo.SaveRefreshToken(userID, token, 7*24*time.Hour)
 }
 
-// func (s *AuthService) ValidateRefreshToken(userID uint, tokenHash string) (bool, error) {
-// 	valid, err := s.repo.ValidateRefreshToken(userID, tokenHash)
-// 	if err != nil {
-// 		return false, fmt.Errorf("token validation failed: %w", err)
-// 	}
-// 	return valid, nil
-// }
+func (s *AuthService) ValidateToken(token string) (uint64, string, bool, error) {
+	claims, err := s.service.ValidateToken(token)
+	if err != nil {
+		return 0, "", false, fmt.Errorf("invalid token: %w", err)
+	}
 
-// func (s *AuthService) RevokeRefreshToken(userID uint) error {
-// 	return s.repo.DeleteRefreshToken(userID)
-// }
+	userID := uint64(claims["user_id"].(float64))
+	role := claims["role"].(string)
+	return userID, role, true, nil
+}
+
+func (s *AuthService) RefreshToken(refreshToken string) (string, error) {
+	claims, err := s.service.ValidateToken(refreshToken)
+	if err != nil {
+		return "", fmt.Errorf("invalid refresh token: %w", err)
+	}
+
+	userID := uint(claims["user_id"].(float64))
+	role := claims["role"].(string)
+
+	// Generate a new access token
+	accessToken, _, err := s.service.GenerateTokens(userID, role)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate new access token: %w", err)
+	}
+
+	return accessToken, nil
+}
+
+func (s *AuthService) Logout(userID uint, sessionID string) error {
+	if err := s.repo.DeleteRefreshToken(userID, sessionID); err != nil {
+		return fmt.Errorf("failed to delete refresh token for session %s: %w", sessionID, err)
+	}
+	return nil
+}
+
+func (s *AuthService) RevokeAllTokens(userID uint) error {
+	if err := s.repo.RevokeAllTokens(userID); err != nil {
+		return fmt.Errorf("failed to revoke all tokens for user %d: %w", userID, err)
+	}
+	return nil
+}

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"auth-service/internal/models"
+	"auth-service/internal/utils"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -18,15 +19,22 @@ func NewTokenRepository(client *redis.Client) *TokenRepository {
 	return &TokenRepository{client: client}
 }
 
-func (r *TokenRepository) SaveRefreshToken(userID uint, token models.RefreshToken, ttl time.Duration) error {
-	key := fmt.Sprintf("refresh_token:%d", userID)
+func (r *TokenRepository) SaveRefreshToken(userID uint, token models.RefreshToken, ttl time.Duration) (string, error) {
+
+	sessionID := utils.GenerateSessionID()
+	key := fmt.Sprintf("refresh_token:%d:%s", userID, sessionID)
 
 	data, err := json.Marshal(token)
 	if err != nil {
-		return fmt.Errorf("failed to serialize token: %w", err)
+		return "", fmt.Errorf("failed to serialize token: %w", err)
 	}
 
-	return r.client.Set(context.Background(), key, data, ttl).Err()
+	err = r.client.Set(context.Background(), key, data, ttl).Err()
+	if err != nil {
+		return "", fmt.Errorf("failed to save token: %w", err)
+	}
+
+	return sessionID, nil
 }
 
 func (r *TokenRepository) GetRefreshToken(userID uint) (*models.RefreshToken, error) {
@@ -47,8 +55,8 @@ func (r *TokenRepository) GetRefreshToken(userID uint) (*models.RefreshToken, er
 	return &token, nil
 }
 
-func (r *TokenRepository) DeleteRefreshToken(userID uint) error {
-	key := fmt.Sprintf("refresh_token:%d", userID)
+func (r *TokenRepository) DeleteRefreshToken(userID uint, sessionID string) error {
+	key := fmt.Sprintf("refresh_token:%d:%s", userID, sessionID)
 	return r.client.Del(context.Background(), key).Err()
 }
 
@@ -58,4 +66,15 @@ func (r *TokenRepository) ValidateRefreshToken(userID uint, tokenHash string) (b
 		return false, err
 	}
 	return token.TokenHash == tokenHash, nil
+}
+
+func (r *TokenRepository) RevokeAllTokens(userID uint) error {
+	pattern := fmt.Sprintf("refresh_token:%d:*", userID)
+	iter := r.client.Scan(context.Background(), 0, pattern, 0).Iterator()
+	for iter.Next(context.Background()) {
+		if err := r.client.Del(context.Background(), iter.Val()).Err(); err != nil {
+			return fmt.Errorf("failed to delete token: %w", err)
+		}
+	}
+	return iter.Err()
 }

@@ -6,6 +6,10 @@ option go_package = "./";
 
 service AuthService {
   rpc Login (LoginRequest) returns (LoginResponse);
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+  rpc RevokeAllTokens (RevokeAllTokensRequest) returns (RevokeAllTokensResponse);
 }
 
 service UserService {
@@ -20,6 +24,42 @@ message LoginRequest {
 message LoginResponse {
   string access_token = 1;
   string refresh_token = 2;
+  string session_id = 3;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  uint64 user_id = 1;
+  string role = 2;
+  bool valid = 3;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+}
+
+message LogoutRequest {
+  uint64 user_id = 1;
+  string session_id = 2;
+}
+
+message LogoutResponse {
+  string message = 1;
+}
+
+message RevokeAllTokensRequest {
+  uint64 user_id = 1;
+}
+
+message RevokeAllTokensResponse {
+  string message = 1;
 }
 
 message ValidateUserRequest {
