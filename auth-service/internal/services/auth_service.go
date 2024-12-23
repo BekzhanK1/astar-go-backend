@@ -2,8 +2,13 @@ package services
 
 import (
 	"auth-service/clients"
+	"auth-service/internal/models"
+	"auth-service/internal/repositories"
+	"auth-service/internal/utils"
 	"auth-service/pkg/auth"
 	"fmt"
+	"log"
+	"time"
 )
 
 type UserRole string
@@ -16,17 +21,16 @@ const (
 )
 
 type AuthService struct {
-	service *auth.TokenService
-	// repo       *repositories.TokenRepository
+	service    *auth.TokenService
 	userClient *clients.UserServiceClient
+	repo       *repositories.TokenRepository
 }
 
-func NewAuthService(service *auth.TokenService, userClient *clients.UserServiceClient) *AuthService {
-	return &AuthService{service: service, userClient: userClient}
+func NewAuthService(service *auth.TokenService, userClient *clients.UserServiceClient, repo *repositories.TokenRepository) *AuthService {
+	return &AuthService{service: service, userClient: userClient, repo: repo}
 }
 
 func (s *AuthService) Login(email, password string) (string, string, error) {
-	// Step 1: Validate user credentials via gRPC call
 	fmt.Printf("Validating user %s\n", email)
 	fmt.Printf("Validating user %s\n", password)
 	userID, role, err := s.userClient.ValidateUser(email, password)
@@ -34,24 +38,35 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 		return "", "", fmt.Errorf("failed to validate user: %w", err)
 	}
 
-	// Step 2: Generate access and refresh tokens
 	accessToken, refreshToken, err := s.service.GenerateTokens(uint(userID), role)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
+	hashToken, err := utils.HashToken(refreshToken)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := s.SaveRefreshToken(uint(userID), hashToken); err != nil {
+		return "", "", fmt.Errorf("failed to save refresh token: %w", err)
+	}
+
 	return accessToken, refreshToken, nil
 }
 
-// func (s *AuthService) SaveRefreshToken(userID uint, tokenHash string) error {
-// 	token := models.RefreshToken{
-// 		UserID:    userID,
-// 		TokenHash: tokenHash,
-// 		IssuedAt:  time.Now(),
-// 		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-// 	}
-// 	return s.repo.SaveRefreshToken(userID, token, 7*24*time.Hour)
-// }
+func (s *AuthService) SaveRefreshToken(userID uint, tokenHash string) error {
+	token := models.RefreshToken{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		IssuedAt:  time.Now(),
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+	}
+
+	log.Println("Saving refresh token to Redis")
+	return s.repo.SaveRefreshToken(userID, token, 7*24*time.Hour)
+}
 
 // func (s *AuthService) ValidateRefreshToken(userID uint, tokenHash string) (bool, error) {
 // 	valid, err := s.repo.ValidateRefreshToken(userID, tokenHash)

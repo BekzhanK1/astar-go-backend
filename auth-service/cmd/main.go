@@ -3,8 +3,11 @@ package main
 import (
 	authGrpc "auth-service/api/grpc"
 	"auth-service/clients"
+	"auth-service/internal/repositories"
 	"auth-service/internal/services"
+	"auth-service/internal/utils"
 	"auth-service/pkg/auth"
+	"auth-service/pkg/config"
 	"log"
 	"net"
 
@@ -14,15 +17,16 @@ import (
 )
 
 func main() {
-	// Initialize dependencies
-	tokenService := auth.NewAuthService("your-secret-key")
-	// tokenRepo := repositories.NewTokenRepository(nil)                  // Replace with actual DB instance
-	userClient, err := clients.NewUserServiceClient("localhost:50051")
+	utils.LoadEnv()
+	tokenService := auth.NewAuthService(utils.GetEnv("JWT_SECRET", "your-secret-key"))
+	userClient, err := clients.NewUserServiceClient(utils.GetEnv("USER_SERVICE_URL", "localhost:50051"))
 	if err != nil {
 		log.Fatalf("Failed to create user client: %v", err)
 	}
 
-	authService := services.NewAuthService(tokenService, userClient)
+	redisClient := config.NewConfig().RedisClient
+	tokenRepo := repositories.NewTokenRepository(redisClient) // Replace with actual DB instance
+	authService := services.NewAuthService(tokenService, userClient, tokenRepo)
 	authHandler := authGrpc.NewAuthHandler(authService)
 
 	// Set up gRPC server
