@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"auth-service/internal/services"
-	pb "auth-service/proto"
+	pb "auth-service/protobuf/auth"
 	"context"
 
 	"google.golang.org/grpc/codes"

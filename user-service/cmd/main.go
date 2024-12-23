@@ -13,7 +13,7 @@ import (
 	userService "user-service/internal/user/service"
 	"user-service/pkg/config"
 	"user-service/pkg/database"
-	pb "user-service/proto"
+	pb "user-service/protobuf/user"
 )
 
 func main() {

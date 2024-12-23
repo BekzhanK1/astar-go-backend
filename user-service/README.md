@@ -1,1 +1,1 @@
-protoc --go_out=proto --go-grpc_out=proto proto/user.proto
+protoc --go_out=protobuf/user --go-grpc_out=protobuf/user protobuf/user/user.proto

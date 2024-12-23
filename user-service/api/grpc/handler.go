@@ -5,7 +5,7 @@ import (
 
 	userModels "user-service/internal/user/models"
 	userService "user-service/internal/user/service"
-	pb "user-service/proto"
+	pb "user-service/protobuf/user"
 )
 
 type UserServiceServer struct {

@@ -1,0 +1,9 @@
+[submodule "user-service/protobuf"]
+	path = user-service/protobuf
+	url = https://github.com/BekzhanK1/astar-proto
+[submodule "auth-service/protobuf"]
+	path = auth-service/protobuf
+	url = https://github.com/BekzhanK1/astar-proto
+[submodule "api-gateway/protobuf"]
+	path = api-gateway/protobuf
+	url = https://github.com/BekzhanK1/astar-proto

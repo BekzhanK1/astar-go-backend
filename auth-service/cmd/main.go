@@ -11,7 +11,7 @@ import (
 	"log"
 	"net"
 
-	pb "auth-service/proto"
+	pb "auth-service/protobuf/auth"
 
 	"google.golang.org/grpc"
 )

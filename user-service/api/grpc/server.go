@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	pb "user-service/proto"
+	pb "user-service/protobuf/user"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
