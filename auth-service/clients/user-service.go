@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	pb "auth-service/protobuf/auth"
+	pb "auth-service/protobuf/user"
 
 	"google.golang.org/grpc"
 )
